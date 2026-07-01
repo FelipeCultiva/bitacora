@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B3A4B">
+<title>Bitácora · Registro de campo</title>
+<style>
+  :root{
+    --ink:#1B3A4B;
+    --ink-soft:#3C5A6B;
+    --paper:#FAFAF8;
+    --paper-dim:#F0EEE7;
+    --line:#DAD6CA;
+    --ok:#2D7D5A;
+    --ok-bg:#E7F2EC;
+    --warn:#C8862D;
+    --warn-bg:#FBF0E0;
+    --danger:#A33B3B;
+    --danger-bg:#F7E8E6;
+    font-size:17px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  body{overscroll-behavior-y:none;}
+  button{font-family:inherit;}
+  .app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom);}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px 10px; position:sticky; top:0; background:var(--paper); z-index:5;
+    border-bottom:1px solid var(--line);}
+  .brand{display:flex; align-items:center; gap:8px;}
+  .brand-mark{width:28px; height:28px; border-radius:7px; background:var(--ink);
+    display:flex; align-items:center; justify-content:center; color:var(--paper);
+    font-weight:700; font-size:13px; letter-spacing:.5px;}
+  .brand-name{font-weight:700; font-size:15px; letter-spacing:.2px;}
+  .vendor-chip{font-size:12px; color:var(--ink-soft); background:var(--paper-dim);
+    border:1px solid var(--line); border-radius:20px; padding:5px 10px; display:flex; align-items:center; gap:6px;}
+  .vendor-chip button{background:none; border:none; color:var(--ink-soft); font-size:11px;
+    text-decoration:underline; padding:0; cursor:pointer;}
+
+  /* ---------- sync state strip ---------- */
+  .sync-strip{display:flex; align-items:center; gap:7px; padding:9px 16px;
+    font-size:12.5px; font-weight:600; letter-spacing:.2px;}
+  .sync-strip.online{background:var(--ok-bg); color:var(--ok);}
+  .sync-strip.pending{background:var(--warn-bg); color:var(--warn);}
+  .sync-strip.offline{background:var(--danger-bg); color:var(--danger);}
+  .dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:none;}
+  .sync-strip .count{margin-left:auto; font-weight:700;}
+
+  /* ---------- screens ---------- */
+  .screen{flex:1; display:none; flex-direction:column; padding:16px;}
+  .screen.active{display:flex;}
+
+  /* ---------- login ---------- */
+  #screen-login{justify-content:center; gap:22px; padding:24px;}
+  .login-mark{width:56px; height:56px; border-radius:14px; background:var(--ink); margin:0 auto;
+    display:flex; align-items:center; justify-content:center; color:var(--paper); font-weight:700; font-size:22px;}
+  .login-title{text-align:center; font-size:21px; font-weight:700; margin:0;}
+  .login-sub{text-align:center; color:var(--ink-soft); font-size:14px; margin:-12px 0 0;}
+  .field label{display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;}
+  .field label.required{color:#1D5FB8;}
+  .field label.required::after{content:" *"; color:#1D5FB8;}
+  .field input{width:100%; padding:14px 14px; font-size:18px; border:1.5px solid var(--line);
+    border-radius:10px; background:#fff; color:var(--ink); letter-spacing:1px;}
+  .field input:focus{outline:none; border-color:var(--ink);}
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    padding:15px; border-radius:10px; border:none; font-size:16px; font-weight:700;
+    cursor:pointer; letter-spacing:.2px;}
+  .btn-primary{background:var(--ink); color:var(--paper);}
+  .btn-primary:active{background:var(--ink-soft);}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1.5px solid var(--line);}
+  .login-error{color:var(--danger); font-size:13px; text-align:center; min-height:16px;}
+  .btn[disabled]{opacity:.6; cursor:default;}
+  .spinner{width:16px; height:16px; border-radius:50%; border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff; animation:spin .7s linear infinite; flex:none;}
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- gps badge ---------- */
+  .gps-badge{display:flex; align-items:center; gap:7px; padding:9px 12px; border-radius:10px;
+    font-size:12.5px; font-weight:600; margin-bottom:14px;}
+  .gps-badge.ok{background:var(--ok-bg); color:var(--ok);}
+  .gps-badge.wait{background:var(--paper-dim); color:var(--ink-soft);}
+  .gps-badge.off{background:var(--warn-bg); color:var(--warn);}
+  .gps-badge .gdot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:none;}
+  .gps-badge .gtime{margin-left:auto; font-weight:500; opacity:.8;}
+
+  /* ---------- home ---------- */
+  .greet{margin:4px 0 2px; font-size:13px; color:var(--ink-soft);}
+  .greet b{color:var(--ink);}
+  .day-tally{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:14px 0 18px;}
+  .tally-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 8px; text-align:center;}
+  .tally-num{font-size:18px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .tally-label{font-size:10.5px; color:var(--ink-soft); margin-top:2px; text-transform:uppercase; letter-spacing:.4px;}
+
+  .section-label{font-size:12.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase;
+    letter-spacing:.5px; margin:6px 0 10px;}
+  .action-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;}
+  .action-card{background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:16px 12px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:8px; cursor:pointer; text-align:left;}
+  .action-card:active{background:var(--paper-dim);}
+  .action-icon{width:34px; height:34px; border-radius:9px; display:flex; align-items:center;
+    justify-content:center; font-size:17px;}
+  .action-card.venta .action-icon{background:var(--ok-bg); color:var(--ok);}
+  .action-card.cobranza .action-icon{background:var(--warn-bg); color:var(--warn);}
+  .action-card.visita .action-icon{background:#E6EEF2; color:var(--ink);}
+  .action-card .action-title{font-weight:700; font-size:15px;}
+  .action-card .action-sub{font-size:11.5px; color:var(--ink-soft); line-height:1.3;}
+
+  .recent-list{display:flex; flex-direction:column; gap:8px; margin-top:4px;}
+  .recent-item{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    display:flex; align-items:center; gap:10px;}
+  .recent-badge{font-size:10px; font-weight:700; padding:3px 7px; border-radius:6px; flex:none; text-transform:uppercase;}
+  .recent-badge.venta{background:var(--ok-bg); color:var(--ok);}
+  .recent-badge.cobranza{background:var(--warn-bg); color:var(--warn);}
+  .recent-badge.visita{background:#E6EEF2; color:var(--ink);}
+  .recent-main{flex:1; min-width:0;}
+  .recent-client{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .recent-meta{font-size:11.5px; color:var(--ink-soft);}
+  .recent-amount{font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; flex:none;}
+  .recent-status{width:8px; height:8px; border-radius:50%; flex:none;}
+  .recent-status.sent{background:var(--ok);}
+  .recent-status.pending{background:var(--warn);}
+  .empty-note{color:var(--ink-soft); font-size:13px; text-align:center; padding:18px 0;}
+
+  /* ---------- tipo interesado tally ---------- */
+  .tipo-tally{display:flex; flex-direction:column; gap:6px; margin-bottom:18px;}
+  .tipo-row{display:flex; align-items:center; justify-content:space-between;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px;}
+  .tipo-name{font-size:14px; font-weight:600;}
+  .tipo-count{font-size:15px; font-weight:700; font-variant-numeric:tabular-nums;
+    background:var(--paper-dim); border-radius:20px; padding:2px 10px; min-width:30px; text-align:center;}
+
+  /* ---------- form screen ---------- */
+  .form-header{display:flex; align-items:center; gap:10px; margin-bottom:18px;}
+  .back-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex:none;}
+  .form-title{font-size:18px; font-weight:700;}
+  .form-title-sub{font-size:12px; color:var(--ink-soft);}
+  .field{margin-bottom:14px;}
+  .field select, .field textarea{width:100%; padding:14px; font-size:16px; border:1.5px solid var(--line);
+    border-radius:10px; background:#fff; color:var(--ink); font-family:inherit;}
+  .field select:focus, .field textarea:focus{outline:none; border-color:var(--ink);}
+  textarea{resize:none; min-height:64px;}
+  .amount-wrap{position:relative;}
+  .amount-wrap .cur{position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--ink-soft); font-weight:600;}
+  .amount-wrap input{padding-left:32px !important; font-variant-numeric:tabular-nums; font-weight:700;}
+  .pill-group{display:flex; gap:8px; flex-wrap:wrap;}
+  .zone-status{font-size:12px; color:var(--ink-soft); margin-bottom:8px;}
+  .zone-status.ok{color:var(--ok);}
+  .pill{padding:9px 14px; border-radius:20px; border:1.5px solid var(--line); background:#fff;
+    font-size:13.5px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+  .pill.selected{background:var(--ink); border-color:var(--ink); color:var(--paper);}
+  .form-spacer{flex:1;}
+  .form-footer{padding-top:8px;}
+
+  /* ---------- toast ---------- */
+  .toast{position:fixed; left:16px; right:16px; bottom:22px; max-width:448px; margin:0 auto;
+    background:var(--ink); color:var(--paper); padding:13px 16px; border-radius:11px;
+    font-size:14px; font-weight:600; display:flex; align-items:center; gap:9px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18); transform:translateY(80px); opacity:0;
+    transition:transform .25s ease, opacity .25s ease; z-index:50;}
+  .toast.show{transform:translateY(0); opacity:1;}
+  .toast .tick{color:var(--ok); font-weight:800;}
+
+  /* ---------- history screen ---------- */
+  .filter-row{display:flex; gap:7px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px;}
+  .filter-row .pill{flex:none;}
+
+  /* ---------- nav ---------- */
+  .navbar{display:flex; border-top:1px solid var(--line); background:var(--paper);
+    position:sticky; bottom:0;}
+  .nav-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:9px 0 calc(9px + env(safe-area-inset-bottom)); background:none; border:none; cursor:pointer;
+    color:var(--ink-soft); font-size:11px; font-weight:600;}
+  .nav-btn.active{color:var(--ink);}
+  .nav-icon{font-size:17px;}
+
+  .hidden{display:none !important;}
+
+  /* ---------- modales ---------- */
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100;
+    display:flex; align-items:flex-end; justify-content:center; padding:0 0 env(safe-area-inset-bottom);}
+  .modal-overlay.hidden{display:none !important;}
+  .modal-box{background:var(--paper); border-radius:18px 18px 0 0; width:100%; max-width:480px;
+    padding:22px 18px 28px; display:flex; flex-direction:column; gap:10px;}
+  .modal-title{font-size:17px; font-weight:700; text-align:center;}
+  .modal-sub{font-size:13px; color:var(--ink-soft); text-align:center; line-height:1.5;}
+  .modal-icon-warn{font-size:32px; text-align:center;}
+  .modal-actions{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .btn-danger-outline{background:transparent; color:var(--danger); border:1.5px solid var(--danger);
+    display:flex; align-items:center; justify-content:center; width:100%; padding:15px;
+    border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .btn-danger{background:var(--danger); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center; width:100%; padding:15px;
+    border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===================== LOGIN ===================== -->
+  <div class="screen active" id="screen-login">
+    <div class="login-mark">B</div>
+    <h1 class="login-title">Bitácora de campo</h1>
+    <p class="login-sub">Selecciona tu nombre e ingresa tu contraseña</p>
+    <div class="field">
+      <label for="vendorSelect">Ejecutivo</label>
+      <select id="vendorSelect">
+        <option value="">Cargando catálogo…</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="vendorPass">Contraseña</label>
+      <input id="vendorPass" type="password" inputmode="text" autocomplete="off" placeholder="••••••" maxlength="40">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn btn-primary" id="btnLogin">Entrar</button>
+    <button class="btn btn-ghost hidden" id="btnRetryCatalog">Reintentar carga de catálogo</button>
+  </div>
+
+  <!-- ===================== HOME ===================== -->
+  <div class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">B</div>
+        <div class="brand-name">Bitácora</div>
+      </div>
+      <div class="vendor-chip">
+        <span id="vendorChipLabel">V-014</span>
+        <button id="btnLogout">salir</button>
+      </div>
+    </div>
+
+    <!-- Modal cierre de sesión -->
+    <div id="logoutModal" class="modal-overlay hidden">
+      <div class="modal-box">
+        <div class="modal-title">¿Qué deseas hacer?</div>
+        <div class="modal-sub">Sesión activa: <b id="modalVendorName"></b></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btnLogoutOnly">Solo cerrar sesión</button>
+          <button class="btn btn-danger-outline" id="btnLogoutAndClear">Cerrar sesión y borrar mis datos</button>
+          <button class="btn btn-ghost" id="btnLogoutCancel">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal confirmación borrado (segunda pregunta) -->
+    <div id="clearConfirmModal" class="modal-overlay hidden">
+      <div class="modal-box">
+        <div class="modal-icon-warn">⚠️</div>
+        <div class="modal-title">¿Estás seguro?</div>
+        <div class="modal-sub">Se borrarán <b>todos tus registros locales</b> en este celular. Los que ya se enviaron al sistema no se pierden, pero los <b>pendientes de enviar sí se eliminarán</b>.</div>
+        <div class="modal-actions">
+          <button class="btn btn-danger" id="btnConfirmClear">Sí, borrar todo y salir</button>
+          <button class="btn btn-ghost" id="btnCancelClear">No, cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sync-strip online" id="syncStrip">
+      <span class="dot"></span>
+      <span id="syncStripText">Todo sincronizado</span>
+      <span class="count" id="syncStripCount"></span>
+    </div>
+
+    <div class="home-content" style="padding:16px 16px 0; flex:1; display:flex; flex-direction:column; overflow-y:auto;">
+      <p class="greet">Hoy, <b id="todayLabel">—</b></p>
+
+      <div class="day-tally">
+        <div class="tally-card">
+          <div class="tally-num" id="tallyVentas">0</div>
+          <div class="tally-label">Ventas</div>
+        </div>
+        <div class="tally-card">
+          <div class="tally-num" id="tallyVisitas">0</div>
+          <div class="tally-label">Visitas</div>
+        </div>
+        <div class="tally-card">
+          <div class="tally-num" id="tallyCobranza">$0</div>
+          <div class="tally-label">Cobrado</div>
+        </div>
+      </div>
+
+      <div class="section-label hidden" id="tipoTallyLabel">Interesados hoy por tipo</div>
+      <div class="tipo-tally hidden" id="tipoTally"></div>
+
+      <div class="section-label">Registrar movimiento</div>
+      <div class="action-grid">
+        <div class="action-card venta" data-type="venta" style="grid-column:1 / -1;">
+          <div class="action-icon">$</div>
+          <div class="action-title">Registro prospecto</div>
+          <div class="action-sub">Cierre con cliente</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:18px;">Tus últimos registros</div>
+      <div class="recent-list" id="recentList"></div>
+      <div class="empty-note hidden" id="emptyNote">Aún no tienes registros hoy. Toca arriba para empezar.</div>
+    </div>
+
+    <div class="navbar">
+      <button class="nav-btn active" data-nav="home"><span class="nav-icon">⌂</span>Inicio</button>
+      <button class="nav-btn" data-nav="history"><span class="nav-icon">≡</span>Historial</button>
+    </div>
+  </div>
+
+  <!-- ===================== FORM ===================== -->
+  <div class="screen" id="screen-form">
+    <div style="padding:14px 16px 0; flex:1; display:flex; flex-direction:column;">
+      <div class="form-header">
+        <button class="back-btn" id="formBack">←</button>
+        <div>
+          <div class="form-title" id="formTitle">Venta</div>
+          <div class="form-title-sub" id="formSub">Registra el cierre con tu cliente</div>
+        </div>
+      </div>
+
+      <div class="gps-badge wait" id="gpsBadge">
+        <span class="gdot"></span>
+        <span id="gpsBadgeText">Buscando tu ubicación…</span>
+      </div>
+
+      <form id="movForm" style="display:flex; flex-direction:column; flex:1;">
+        <div class="field">
+          <label for="tipoInteresado" class="required">Tipo de interesado</label>
+          <select id="tipoInteresado" required>
+            <option value="">Cargando tipos…</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="clientName" id="clientLabel" class="required">Prospecto</label>
+          <input id="clientName" type="text" placeholder="Nombre del prospecto o negocio" required>
+        </div>
+
+        <div class="field" id="amountField">
+          <label id="amountLabel" for="amount" class="required">Monto solicitado</label>
+          <div class="amount-wrap">
+            <span class="cur">$</span>
+            <input id="amount" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+          </div>
+        </div>
+
+        <div class="field" id="zoneField">
+          <label for="zoneInput">Zona / colonia</label>
+          <div class="zone-status" id="zoneStatus">Activa el GPS para ver colonias cercanas</div>
+          <div class="pill-group" id="zonePills"></div>
+          <input id="zoneInput" type="text" placeholder="Escribe la colonia si no aparece en la lista" style="margin-top:8px;">
+        </div>
+
+        <div class="field" id="phoneField">
+          <label for="phone" class="required">Número de celular</label>
+          <input id="phone" type="tel" inputmode="numeric" maxlength="10" placeholder="10 dígitos" required>
+        </div>
+
+        <div class="field" id="nextVisitField">
+          <label for="nextVisit">Próxima visita</label>
+          <input id="nextVisit" type="date">
+        </div>
+
+        <div class="field" id="visitTimeField">
+          <label for="visitTime">Hora preferida de visita</label>
+          <select id="visitTime">
+            <option value="">Selecciona un horario…</option>
+            <option>8:00 am – 10:00 am</option>
+            <option>9:00 am – 11:00 am</option>
+            <option>10:00 am – 12:00 pm</option>
+            <option>11:00 am – 1:00 pm</option>
+            <option>12:00 pm – 2:00 pm</option>
+            <option>1:00 pm – 3:00 pm</option>
+            <option>2:00 pm – 4:00 pm</option>
+            <option>3:00 pm – 5:00 pm</option>
+            <option>4:00 pm – 6:00 pm</option>
+            <option>5:00 pm – 7:00 pm</option>
+          </select>
+        </div>
+
+        <div class="field" id="resultField">
+          <label>Resultado de la visita</label>
+          <div class="pill-group" id="visitResultPills">
+            <div class="pill" data-val="interesado">Interesado</div>
+            <div class="pill" data-val="seguimiento">Necesita seguimiento</div>
+            <div class="pill" data-val="no_disponible">No disponible</div>
+            <div class="pill" data-val="rechazo">Rechazó</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="note">Comentarios (opcional)</label>
+          <textarea id="note" placeholder="Algo breve que quieras recordar…"></textarea>
+        </div>
+
+        <div class="form-spacer"></div>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary" id="submitBtn">Guardar registro</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== HISTORY ===================== -->
+  <div class="screen" id="screen-history">
+    <div class="topbar">
+      <div class="brand">
+        <button class="back-btn" id="historyBack">←</button>
+        <div class="brand-name">Historial</div>
+      </div>
+      <div></div>
+    </div>
+    <div style="padding:14px 16px; flex:1; display:flex; flex-direction:column;">
+      <div class="filter-row">
+        <div class="pill selected" data-filter="todos">Todos</div>
+        <div class="pill" data-filter="venta">Ventas</div>
+        <div class="pill" data-filter="cobranza">Cobranza</div>
+        <div class="pill" data-filter="visita">Visitas</div>
+        <div class="pill" data-filter="pending">Sin enviar</div>
+      </div>
+      <div class="recent-list" id="historyList"></div>
+      <div class="empty-note hidden" id="historyEmptyNote">No hay registros con este filtro.</div>
+    </div>
+    <div class="navbar">
+      <button class="nav-btn" data-nav="home"><span class="nav-icon">⌂</span>Inicio</button>
+      <button class="nav-btn active" data-nav="history"><span class="nav-icon">≡</span>Historial</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"><span class="tick">✓</span><span id="toastText">Guardado</span></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================
+     CONFIGURACIÓN — pega aquí la URL de tu Apps Script al desplegar
+     ========================================================= */
+  var ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxYsa540xMaUp19couIf2UczFfiOEy-xy06vQxCatZ9E-_Wa4_HgQaF6UVXIyb3DOBWBA/exec";
+
+  var STORAGE_KEY = "bitacora_registros_v1";
+  var VENDOR_KEY = "bitacora_vendedor_v1";
+  var CATALOG_CACHE_KEY = "bitacora_catalogo_v1";
+  var LAST_LOCATION_KEY = "bitacora_ultima_ubicacion_v1";
+  var TIPOS_CACHE_KEY   = "bitacora_tipos_v1";
+
+  var state = {
+    vendor: null,
+    currentType: null,
+    visitResult: null,
+    records: [],
+    catalog: [],
+    tiposInteresado: [],
+    currentLocation: null,   // {lat, lng, accuracy, capturedAt, isFresh}
+    lastKnownLocation: null  // fallback si no se puede obtener una nueva
+  };
+
+  /* ---------- storage helpers ---------- */
+  function loadRecords(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      state.records = raw ? JSON.parse(raw) : [];
+    }catch(e){ state.records = []; }
+  }
+  function saveRecords(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records)); }catch(e){}
+  }
+  function loadVendor(){
+    try{ state.vendor = localStorage.getItem(VENDOR_KEY) || null; }catch(e){ state.vendor = null; }
+  }
+  function saveVendor(v){
+    try{ localStorage.setItem(VENDOR_KEY, v); }catch(e){}
+  }
+  function clearVendor(){
+    try{ localStorage.removeItem(VENDOR_KEY); }catch(e){}
+  }
+  function loadCatalogCache(){
+    try{
+      var raw = localStorage.getItem(CATALOG_CACHE_KEY);
+      state.catalog = raw ? JSON.parse(raw) : [];
+    }catch(e){ state.catalog = []; }
+  }
+  function saveCatalogCache(list){
+    try{ localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function loadLastLocation(){
+    try{
+      var raw = localStorage.getItem(LAST_LOCATION_KEY);
+      state.lastKnownLocation = raw ? JSON.parse(raw) : null;
+    }catch(e){ state.lastKnownLocation = null; }
+  }
+  function saveLastLocation(loc){
+    try{ localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(loc)); }catch(e){}
+  }
+
+  /* ---------- tipos de interesado ---------- */
+  function loadTiposCache(){
+    try{
+      var raw = localStorage.getItem(TIPOS_CACHE_KEY);
+      state.tiposInteresado = raw ? JSON.parse(raw) : [];
+    }catch(e){ state.tiposInteresado = []; }
+  }
+  function saveTiposCache(list){
+    try{ localStorage.setItem(TIPOS_CACHE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  var TIPOS_FALLBACK = ["Ejecutivos","Registro"];
+
+  function populateTipoSelect(){
+    var select = document.getElementById("tipoInteresado");
+    if(!select) return;
+    var tipos = state.tiposInteresado.length ? state.tiposInteresado : TIPOS_FALLBACK;
+    var opts = ['<option value="">Selecciona tipo…</option>'];
+    tipos.forEach(function(t){
+      opts.push('<option value="'+escapeHTML(t)+'">'+escapeHTML(t)+'</option>');
+    });
+    select.innerHTML = opts.join("");
+  }
+
+  function loadTipos(){
+    if(!ENDPOINT_URL || ENDPOINT_URL.indexOf("http") !== 0){
+      loadTiposCache();
+      populateTipoSelect();
+      return;
+    }
+    fetch(ENDPOINT_URL + "?accion=tipos")
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data && data.ok && Array.isArray(data.tipos) && data.tipos.length){
+          state.tiposInteresado = data.tipos;
+          saveTiposCache(state.tiposInteresado);
+        } else {
+          loadTiposCache();
+          if(!state.tiposInteresado.length) state.tiposInteresado = TIPOS_FALLBACK;
+        }
+        populateTipoSelect();
+      })
+      .catch(function(){
+        loadTiposCache();
+        if(!state.tiposInteresado.length) state.tiposInteresado = TIPOS_FALLBACK;
+        populateTipoSelect();
+      });
+  }
+
+  /* ---------- navigation ---------- */
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById(id).classList.add("active");
+  }
+
+  function goHome(){
+    renderHome();
+    showScreen("screen-home");
+  }
+
+  /* ---------- date / money formatting ---------- */
+  function todayKey(){
+    var d = new Date();
+    return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  }
+  function fmtMoney(n){
+    n = Number(n)||0;
+    return "$" + n.toLocaleString("es-MX", {maximumFractionDigits:0});
+  }
+  function fmtDateLabel(){
+    var d = new Date();
+    var opts = { weekday:'long', day:'numeric', month:'long' };
+    var s = d.toLocaleDateString("es-MX", opts);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return d.toLocaleTimeString("es-MX", {hour:'2-digit', minute:'2-digit'});
+  }
+
+  var TYPE_LABELS = { venta:"Venta", cobranza:"Cobranza", visita:"Visita" };
+
+  /* ---------- rendering: home ---------- */
+  function renderHome(){
+    document.getElementById("vendorChipLabel").textContent = state.vendor || "—";
+    document.getElementById("todayLabel").textContent = fmtDateLabel();
+
+    var todays = state.records.filter(function(r){ return r.dayKey === todayKey(); });
+    var ventas = todays.filter(function(r){ return r.type === "venta"; }).length;
+    var visitas = todays.filter(function(r){ return r.type === "visita"; }).length;
+    var cobrado = todays.filter(function(r){ return r.type === "cobranza"; })
+      .reduce(function(sum,r){ return sum + (Number(r.amount)||0); }, 0);
+
+    document.getElementById("tallyVentas").textContent = ventas;
+    document.getElementById("tallyVisitas").textContent = visitas;
+    document.getElementById("tallyCobranza").textContent = fmtMoney(cobrado);
+
+    renderSyncStrip();
+    renderTiposTally();
+    renderRecentList();
+  }
+
+  function renderTiposTally(){
+    var todays = state.records.filter(function(r){ return r.dayKey === todayKey(); });
+    var container = document.getElementById("tipoTally");
+    var label = document.getElementById("tipoTallyLabel");
+    if(!container) return;
+    if(todays.length === 0){
+      container.innerHTML = "";
+      container.classList.add("hidden");
+      label.classList.add("hidden");
+      return;
+    }
+    var counts = {};
+    todays.forEach(function(r){
+      var t = r.tipoInteresado || "Sin tipo";
+      counts[t] = (counts[t]||0) + 1;
+    });
+    var keys = Object.keys(counts);
+    label.classList.remove("hidden");
+    container.classList.remove("hidden");
+    container.innerHTML = keys.map(function(t){
+      return '<div class="tipo-row">'+
+        '<span class="tipo-name">'+escapeHTML(t)+'</span>'+
+        '<span class="tipo-count">'+counts[t]+'</span>'+
+      '</div>';
+    }).join("");
+  }
+
+  function renderSyncStrip(){
+    var pending = state.records.filter(function(r){ return r.status !== "sent"; }).length;
+    var strip = document.getElementById("syncStrip");
+    var text = document.getElementById("syncStripText");
+    var count = document.getElementById("syncStripCount");
+
+    strip.classList.remove("online","pending","offline");
+    if(pending === 0){
+      strip.classList.add("online");
+      text.textContent = "Todo sincronizado";
+      count.textContent = "";
+    } else if(navigator.onLine){
+      strip.classList.add("pending");
+      text.textContent = "Enviando registros…";
+      count.textContent = pending;
+    } else {
+      strip.classList.add("offline");
+      text.textContent = "Sin conexión — se guardó en tu celular";
+      count.textContent = pending;
+    }
+  }
+
+  function recordRowHTML(r){
+    var badgeClass = r.type;
+    var amountStr = (r.type === "visita") ? "" :
+      '<div class="recent-amount">'+ fmtMoney(r.amount) +'</div>';
+    var metaParts = [fmtTime(r.createdAt)];
+    if(r.tipoInteresado) metaParts.push(r.tipoInteresado);
+    if(r.zone) metaParts.push(r.zone);
+    return ''+
+      '<div class="recent-item">'+
+        '<span class="recent-badge '+badgeClass+'">'+TYPE_LABELS[r.type]+'</span>'+
+        '<div class="recent-main">'+
+          '<div class="recent-client">'+escapeHTML(r.client || "Sin nombre")+'</div>'+
+          '<div class="recent-meta">'+escapeHTML(metaParts.join(" · "))+'</div>'+
+        '</div>'+
+        amountStr+
+        '<span class="recent-status '+(r.status==="sent"?"sent":"pending")+'" title="'+(r.status==="sent"?"Enviado":"Pendiente de enviar")+'"></span>'+
+      '</div>';
+  }
+
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function renderRecentList(){
+    var list = document.getElementById("recentList");
+    var empty = document.getElementById("emptyNote");
+    var todays = state.records.filter(function(r){ return r.dayKey === todayKey(); })
+      .slice().reverse().slice(0,8);
+    if(todays.length === 0){
+      list.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+    list.innerHTML = todays.map(recordRowHTML).join("");
+  }
+
+  /* ---------- rendering: history ---------- */
+  var historyFilter = "todos";
+  function renderHistory(){
+    var list = document.getElementById("historyList");
+    var empty = document.getElementById("historyEmptyNote");
+    var items = state.records.slice().reverse();
+    if(historyFilter === "pending"){
+      items = items.filter(function(r){ return r.status !== "sent"; });
+    } else if(historyFilter !== "todos"){
+      items = items.filter(function(r){ return r.type === historyFilter; });
+    }
+    if(items.length === 0){
+      list.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+    list.innerHTML = items.map(recordRowHTML).join("");
+  }
+
+  /* ---------- form screen ---------- */
+  function openForm(type){
+    state.currentType = type;
+    state.visitResult = null;
+    document.getElementById("movForm").reset();
+    document.querySelectorAll("#visitResultPills .pill").forEach(function(p){ p.classList.remove("selected"); });
+    loadTipos();
+
+    var titleMap = { venta:"Venta", cobranza:"Cobranza", visita:"Visita" };
+    var subMap = {
+      venta:"Registra el cierre con tu cliente",
+      cobranza:"Registra el pago recuperado",
+      visita:"Registra el seguimiento, sin venta"
+    };
+    document.getElementById("formTitle").textContent = titleMap[type];
+    document.getElementById("formSub").textContent = subMap[type];
+
+    var amountField = document.getElementById("amountField");
+    var resultField = document.getElementById("resultField");
+    var amountLabel = document.getElementById("amountLabel");
+    var phoneField = document.getElementById("phoneField");
+    var nextVisitField = document.getElementById("nextVisitField");
+    var visitTimeField = document.getElementById("visitTimeField");
+    var clientLabel = document.getElementById("clientLabel");
+
+    if(type === "visita"){
+      amountField.classList.add("hidden");
+      resultField.classList.remove("hidden");
+      phoneField.classList.add("hidden");
+      nextVisitField.classList.add("hidden");
+      visitTimeField.classList.add("hidden");
+      clientLabel.textContent = "Cliente";
+      document.getElementById("amount").removeAttribute("required");
+      document.getElementById("phone").removeAttribute("required");
+    } else if(type === "venta"){
+      amountField.classList.remove("hidden");
+      resultField.classList.add("hidden");
+      phoneField.classList.remove("hidden");
+      nextVisitField.classList.remove("hidden");
+      visitTimeField.classList.remove("hidden");
+      clientLabel.textContent = "Prospecto";
+      amountLabel.textContent = "Monto solicitado";
+      document.getElementById("amount").setAttribute("required","required");
+      document.getElementById("phone").setAttribute("required","required");
+    } else {
+      // cobranza
+      amountField.classList.remove("hidden");
+      resultField.classList.add("hidden");
+      phoneField.classList.add("hidden");
+      nextVisitField.classList.add("hidden");
+      visitTimeField.classList.add("hidden");
+      clientLabel.textContent = "Cliente";
+      amountLabel.textContent = "Monto cobrado";
+      document.getElementById("amount").setAttribute("required","required");
+      document.getElementById("phone").removeAttribute("required");
+    }
+
+    captureLocation();
+    showScreen("screen-form");
+    setTimeout(function(){ document.getElementById("clientName").focus(); }, 50);
+  }
+
+  /* ---------- captura de GPS ---------- */
+  function setGpsBadge(mode, text){
+    var badge = document.getElementById("gpsBadge");
+    var textEl = document.getElementById("gpsBadgeText");
+    badge.classList.remove("ok","wait","off");
+    badge.classList.add(mode);
+    textEl.textContent = text;
+  }
+
+  function captureLocation(){
+    state.currentLocation = null;
+    resetZoneField();
+
+    if(!("geolocation" in navigator)){
+      useFallbackLocation("Tu celular no permite obtener ubicación");
+      return;
+    }
+
+    setGpsBadge("wait", "Buscando tu ubicación…");
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        var loc = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy || 0),
+          capturedAt: Date.now(),
+          isFresh: true
+        };
+        state.currentLocation = loc;
+        saveLastLocation(loc);
+        setGpsBadge("ok", "Ubicación obtenida (±" + loc.accuracy + " m)");
+        fetchNearbyZones(loc.lat, loc.lng);
+      },
+      function(err){
+        useFallbackLocation("Sin permiso o señal GPS en este momento");
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
+  function useFallbackLocation(reasonText){
+    if(state.lastKnownLocation){
+      state.currentLocation = Object.assign({}, state.lastKnownLocation, { isFresh:false });
+      var mins = Math.round((Date.now() - state.lastKnownLocation.capturedAt) / 60000);
+      var when = mins < 1 ? "hace un momento" : (mins < 60 ? ("hace " + mins + " min") : "hace más tiempo");
+      setGpsBadge("off", reasonText + " — usando última ubicación (" + when + ")");
+      fetchNearbyZones(state.lastKnownLocation.lat, state.lastKnownLocation.lng);
+    } else {
+      state.currentLocation = null;
+      setGpsBadge("off", reasonText + " — se guardará sin ubicación");
+      // Sin GPS y sin respaldo: el campo de zona queda vacío, sin sugerencias.
+    }
+  }
+
+  /* ---------- colonias cercanas vía Nominatim (OpenStreetMap, gratis) ---------- */
+  function resetZoneField(){
+    document.getElementById("zonePills").innerHTML = "";
+    document.getElementById("zoneInput").value = "";
+    var status = document.getElementById("zoneStatus");
+    status.classList.remove("ok");
+    status.textContent = "Activa el GPS para ver colonias cercanas";
+  }
+
+  function fetchNearbyZones(lat, lng){
+    var status = document.getElementById("zoneStatus");
+    status.textContent = "Buscando colonias cercanas…";
+
+    if(!navigator.onLine){
+      status.textContent = "Sin internet: escribe la colonia manualmente";
+      return;
+    }
+
+    var url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + lat +
+      "&lon=" + lng + "&zoom=16&addressdetails=1";
+
+    fetch(url, { headers: { "Accept-Language": "es" } })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        var addr = (data && data.address) ? data.address : {};
+        var candidates = [
+          addr.neighbourhood, addr.suburb, addr.quarter,
+          addr.city_district, addr.colonia, addr.residential
+        ].filter(Boolean);
+
+        // quitar duplicados manteniendo orden
+        var seen = {};
+        var zones = [];
+        candidates.forEach(function(z){
+          if(!seen[z]){ seen[z] = true; zones.push(z); }
+        });
+
+        if(zones.length === 0){
+          status.textContent = "No se detectaron colonias cercanas: escribe la tuya";
+          return;
+        }
+
+        status.classList.add("ok");
+        status.textContent = "Colonias detectadas cerca de tu ubicación:";
+        renderZonePills(zones.slice(0,5));
+      })
+      .catch(function(){
+        status.textContent = "No se pudo buscar colonias: escribe la tuya manualmente";
+      });
+  }
+
+  function renderZonePills(zones){
+    var container = document.getElementById("zonePills");
+    container.innerHTML = zones.map(function(z){
+      return '<div class="pill zone-pill" data-zone="'+escapeHTML(z)+'">'+escapeHTML(z)+'</div>';
+    }).join("");
+
+    container.querySelectorAll(".zone-pill").forEach(function(pill){
+      pill.addEventListener("click", function(){
+        container.querySelectorAll(".zone-pill").forEach(function(p){ p.classList.remove("selected"); });
+        pill.classList.add("selected");
+        document.getElementById("zoneInput").value = pill.getAttribute("data-zone");
+      });
+    });
+  }
+
+  document.querySelectorAll(".action-card").forEach(function(card){
+    card.addEventListener("click", function(){ openForm(card.getAttribute("data-type")); });
+  });
+
+  document.getElementById("formBack").addEventListener("click", goHome);
+  document.getElementById("historyBack").addEventListener("click", goHome);
+
+  document.getElementById("visitResultPills").addEventListener("click", function(e){
+    var pill = e.target.closest(".pill");
+    if(!pill) return;
+    document.querySelectorAll("#visitResultPills .pill").forEach(function(p){ p.classList.remove("selected"); });
+    pill.classList.add("selected");
+    state.visitResult = pill.getAttribute("data-val");
+  });
+
+  document.getElementById("movForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var tipoInteresado = document.getElementById("tipoInteresado").value.trim();
+    var client = document.getElementById("clientName").value.trim();
+    var amount = document.getElementById("amount").value;
+    var zone = document.getElementById("zoneInput").value.trim();
+    var note = document.getElementById("note").value.trim();
+
+    if(!tipoInteresado){ showToast("Selecciona el tipo de interesado"); document.getElementById("tipoInteresado").focus(); return; }
+    if(!client){ document.getElementById("clientName").focus(); return; }
+    if(state.currentType !== "visita" && (!amount || Number(amount) <= 0)){
+      document.getElementById("amount").focus();
+      return;
+    }
+
+    var phone = document.getElementById("phone").value.replace(/\D/g,"");
+    if(state.currentType === "venta"){
+      if(!phone){
+        showToast("El celular es obligatorio");
+        document.getElementById("phone").focus();
+        return;
+      }
+      if(phone.length !== 10){
+        showToast("El celular debe tener 10 dígitos");
+        document.getElementById("phone").focus();
+        return;
+      }
+    }
+
+    var nextVisit = document.getElementById("nextVisit").value;
+    var visitTime = document.getElementById("visitTime").value;
+
+    var record = {
+      id: "r" + Date.now() + Math.random().toString(36).slice(2,7),
+      type: state.currentType,
+      vendor: state.vendor,
+      tipoInteresado: tipoInteresado,
+      client: client,
+      amount: state.currentType === "visita" ? 0 : Number(amount),
+      zone: zone,
+      phone: state.currentType === "venta" ? phone : "",
+      nextVisit: state.currentType === "venta" ? nextVisit : "",
+      visitTime: state.currentType === "venta" ? visitTime : "",
+      visitResult: state.currentType === "visita" ? (state.visitResult||"") : "",
+      note: note,
+      createdAt: Date.now(),
+      dayKey: todayKey(),
+      status: "pending",
+      lat: state.currentLocation ? state.currentLocation.lat : "",
+      lng: state.currentLocation ? state.currentLocation.lng : "",
+      gpsAccuracy: state.currentLocation ? state.currentLocation.accuracy : "",
+      gpsFresh: state.currentLocation ? state.currentLocation.isFresh : ""
+    };
+
+    state.records.push(record);
+    saveRecords();
+    showToast("Registro guardado");
+    goHome();
+    trySync();
+  });
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function showToast(msg){
+    var toast = document.getElementById("toast");
+    document.getElementById("toastText").textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- sync to Google Sheet ---------- */
+  function trySync(){
+    if(!navigator.onLine) { renderSyncStrip(); return; }
+    if(!ENDPOINT_URL || ENDPOINT_URL.indexOf("http") !== 0) { renderSyncStrip(); return; }
+
+    var pending = state.records.filter(function(r){ return r.status !== "sent"; });
+    if(pending.length === 0) return;
+
+    pending.forEach(function(r){
+      r.status = "sending";
+    });
+    renderSyncStrip();
+
+    var sendNext = function(idx){
+      if(idx >= pending.length){
+        saveRecords();
+        renderSyncStrip();
+        renderRecentList();
+        if(document.getElementById("screen-history").classList.contains("active")) renderHistory();
+        return;
+      }
+      var r = pending[idx];
+      fetch(ENDPOINT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(r)
+      }).then(function(res){
+        r.status = "sent";
+        sendNext(idx+1);
+      }).catch(function(err){
+        r.status = "pending";
+        saveRecords();
+        renderSyncStrip();
+      });
+    };
+    sendNext(0);
+  }
+
+  window.addEventListener("online", trySync);
+  setInterval(trySync, 30000);
+
+  /* ---------- nav buttons ---------- */
+  document.querySelectorAll(".nav-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var target = btn.getAttribute("data-nav");
+      document.querySelectorAll(".nav-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll('[data-nav="'+target+'"]').forEach(function(b){ b.classList.add("active"); });
+      if(target === "home"){ goHome(); }
+      else { historyFilter = "todos";
+        document.querySelectorAll('#screen-history .filter-row .pill').forEach(function(p,i){ p.classList.toggle("selected", i===0); });
+        renderHistory(); showScreen("screen-history"); }
+    });
+  });
+
+  document.getElementById("historyList") && document.querySelector(".filter-row").addEventListener("click", function(e){
+    var pill = e.target.closest(".pill");
+    if(!pill) return;
+    document.querySelectorAll(".filter-row .pill").forEach(function(p){ p.classList.remove("selected"); });
+    pill.classList.add("selected");
+    historyFilter = pill.getAttribute("data-filter");
+    renderHistory();
+  });
+
+  /* ---------- catálogo de ejecutivos ---------- */
+  function populateVendorSelect(){
+    var select = document.getElementById("vendorSelect");
+    var retryBtn = document.getElementById("btnRetryCatalog");
+    if(state.catalog.length === 0){
+      select.innerHTML = '<option value="">No se pudo cargar el catálogo</option>';
+      retryBtn.classList.remove("hidden");
+      return;
+    }
+    retryBtn.classList.add("hidden");
+    var opts = ['<option value="">Selecciona tu nombre…</option>'];
+    state.catalog.forEach(function(name){
+      opts.push('<option value="'+escapeHTML(name)+'">'+escapeHTML(name)+'</option>');
+    });
+    select.innerHTML = opts.join("");
+  }
+
+  function loadCatalog(){
+    var select = document.getElementById("vendorSelect");
+    select.innerHTML = '<option value="">Cargando catálogo…</option>';
+
+    if(!ENDPOINT_URL || ENDPOINT_URL.indexOf("http") !== 0){
+      loadCatalogCache();
+      populateVendorSelect();
+      return;
+    }
+
+    fetch(ENDPOINT_URL + "?accion=catalogo")
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data && data.ok && Array.isArray(data.nombres)){
+          state.catalog = data.nombres;
+          saveCatalogCache(state.catalog);
+        } else {
+          loadCatalogCache();
+        }
+        populateVendorSelect();
+      })
+      .catch(function(){
+        loadCatalogCache();
+        populateVendorSelect();
+      });
+  }
+
+  /* ---------- login (valida contra el Sheet) ---------- */
+  document.getElementById("btnLogin").addEventListener("click", doLogin);
+  document.getElementById("btnRetryCatalog").addEventListener("click", loadCatalog);
+  document.getElementById("vendorPass").addEventListener("keydown", function(e){
+    if(e.key === "Enter") doLogin();
+  });
+
+  function setLoginBusy(busy){
+    var btn = document.getElementById("btnLogin");
+    btn.disabled = busy;
+    btn.innerHTML = busy ? '<span class="spinner"></span><span>Validando…</span>' : 'Entrar';
+  }
+
+  function doLogin(){
+    var select = document.getElementById("vendorSelect");
+    var passInput = document.getElementById("vendorPass");
+    var name = select.value;
+    var pass = passInput.value;
+    var err = document.getElementById("loginError");
+    err.textContent = "";
+
+    if(!name){ err.textContent = "Selecciona tu nombre de la lista."; return; }
+    if(!pass){ err.textContent = "Ingresa tu contraseña."; passInput.focus(); return; }
+
+    if(!ENDPOINT_URL || ENDPOINT_URL.indexOf("http") !== 0){
+      err.textContent = "La app aún no está conectada al sistema. Avisa a tu supervisor.";
+      return;
+    }
+
+    if(!navigator.onLine){
+      err.textContent = "Necesitas conexión a internet la primera vez que entras.";
+      return;
+    }
+
+    setLoginBusy(true);
+    fetch(ENDPOINT_URL + "?accion=login&nombre=" + encodeURIComponent(name) + "&clave=" + encodeURIComponent(pass))
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        setLoginBusy(false);
+        if(data && data.ok){
+          state.vendor = name;
+          saveVendor(name);
+          passInput.value = "";
+          goHome();
+        } else {
+          err.textContent = "Contraseña incorrecta. Verifica con tu supervisor.";
+        }
+      })
+      .catch(function(){
+        setLoginBusy(false);
+        err.textContent = "No se pudo validar. Revisa tu conexión e intenta otra vez.";
+      });
+  }
+
+  /* ---------- logout con modal de doble confirmación ---------- */
+  document.getElementById("btnLogout").addEventListener("click", function(){
+    document.getElementById("modalVendorName").textContent = state.vendor || "";
+    document.getElementById("logoutModal").classList.remove("hidden");
+  });
+
+  document.getElementById("btnLogoutCancel").addEventListener("click", function(){
+    document.getElementById("logoutModal").classList.add("hidden");
+  });
+
+  document.getElementById("btnLogoutOnly").addEventListener("click", function(){
+    document.getElementById("logoutModal").classList.add("hidden");
+    clearVendor();
+    state.vendor = null;
+    document.getElementById("vendorPass").value = "";
+    loadCatalog();
+    showScreen("screen-login");
+  });
+
+  document.getElementById("btnLogoutAndClear").addEventListener("click", function(){
+    document.getElementById("logoutModal").classList.add("hidden");
+    document.getElementById("clearConfirmModal").classList.remove("hidden");
+  });
+
+  document.getElementById("btnCancelClear").addEventListener("click", function(){
+    document.getElementById("clearConfirmModal").classList.add("hidden");
+  });
+
+  document.getElementById("btnConfirmClear").addEventListener("click", function(){
+    document.getElementById("clearConfirmModal").classList.add("hidden");
+    // Borrar registros locales, sesión y última ubicación
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    try{ localStorage.removeItem(LAST_LOCATION_KEY); }catch(e){}
+    state.records = [];
+    state.lastKnownLocation = null;
+    state.currentLocation = null;
+    clearVendor();
+    state.vendor = null;
+    document.getElementById("vendorPass").value = "";
+    loadCatalog();
+    showScreen("screen-login");
+    showToast("Datos borrados correctamente");
+  });
+
+  /* ---------- boot ---------- */
+  loadRecords();
+  loadVendor();
+  loadCatalogCache();
+  loadTiposCache();
+  loadLastLocation();
+  if(state.vendor){
+    goHome();
+  } else {
+    populateVendorSelect();
+    loadCatalog();
+    showScreen("screen-login");
+  }
+  trySync();
+
+})();
+</script>
+</body>
+</html>
